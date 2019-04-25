@@ -30,8 +30,7 @@ comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
 rm ad && mv ad.tmp ad
 
 # Export the mini version for gw
-echo > gw-mini
-cat gw | grep amazonaws >> gw-mini
+cat gw | grep amazonaws > gw-mini
 cat gw | grep google >> gw-mini
 cat gw | grep blogspot >> gw-mini
 cat gw | grep youtube >> gw-mini
@@ -47,19 +46,11 @@ sort -u -o gw-mini gw-mini
 # generate ad.hosts file for dnsmasq
 sed 's/^/0.0.0.0 &/g' ad > ../ad.hosts
 
-# generate auto.pac file for client
-pac=auto.pac
-echo 'var gwMap = {' > ../$pac
-awk '{print "  \""$0"\": 1,"}' gw >> ../$pac
-echo '}' >> ../$pac
-cat ../config/auto.pac >> ../$pac
-
-# generate auto-mini.pac file for client
-pac=auto-mini.pac
-echo 'var gwMap = {' > ../$pac
-awk '{print "  \""$0"\": 1,"}' gw-mini >> ../$pac
-echo '}' >> ../$pac
-cat ../config/auto.pac >> ../$pac
+# generate gw.hosts and gw-mini.hosts file for dnsmasq
+awk '{print "server=/"$0"/127.0.0.1#5353"}' gw > ../gw.hosts
+awk '{print "ipset=/"$0"/gw"}' gw >> ../gw.hosts
+awk '{print "server=/"$0"/127.0.0.1#5353"}' gw-mini > ../gw-mini.hosts
+awk '{print "ipset=/"$0"/gw"}' gw-mini >> ../gw-mini.hosts
 
 cd ..
 rm -rf tmp
