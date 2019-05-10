@@ -15,11 +15,14 @@ sort -u -o gw gw
 
 # ad
 cat sr.conf | grep Reject|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > ad
+# Another smaller ad hosts
+wget -O hosts https://cdn.jsdelivr.net/gh/neoFelhz/neohosts@gh-pages/basic/hosts
+cat hosts | grep 0.0.0.0|awk '{print $2}' >> ad
+# add custom ad hosts
+cat ../config/ad.conf >> ad
 # remove the first dot ex: .abc.com
 sed -i.bak 's/^\.//g' ad
 rm ad.bak
-# add custom ad hosts
-cat ../config/ad.conf >> ad
 
 # Uniq and sort ad list
 sort -u -o ad ad
@@ -44,7 +47,7 @@ cat gw | grep cdn >> gw-mini
 sort -u -o gw-mini gw-mini
 
 # generate ad.hosts file for dnsmasq
-sed 's/^/0.0.0.0 &/g' ad > ../ad.hosts
+awk '{print "address=/"$0"/0.0.0.0"}' ad > ../ad.hosts
 
 # generate gw.hosts and gw-mini.hosts file for dnsmasq
 awk '{print "server=/"$0"/127.0.0.1#5353"}' gw > ../gw.hosts

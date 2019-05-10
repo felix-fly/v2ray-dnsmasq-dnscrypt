@@ -56,8 +56,7 @@ vi /etc/dnsmasq.conf
 ```
 加入下面的配置项
 ```
-addn-hosts=/etc/config/v2ray/ad.hosts
-conf-file=/etc/config/v2ray/gw.hosts
+conf-dir=/etc/config/v2ray/, *.hosts
 ```
 
 ### dnscrypt-proxy配置
@@ -121,11 +120,18 @@ iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port
 
 ## 规则来源及更新
 
-主要规则取自[https://github.com/h2y/Shadowrocket-ADBlock-Rules](https://github.com/h2y/Shadowrocket-ADBlock-Rules)
+主要规则取自
+
+* [https://github.com/h2y/Shadowrocket-ADBlock-Rules](https://github.com/h2y/Shadowrocket-ADBlock-Rules)
+* [https://github.com/neoFelhz/neohosts](https://github.com/neoFelhz/neohosts)
 
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+
+2019-05-10
+* 增加另外一个广告源
+* 修改ad.hosts为泛域名解析方式
 
 2019-04-25
 * 初版
