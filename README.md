@@ -85,8 +85,11 @@ iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port
   },
   "inbounds": [{
     "port": 12345,
-    "protocol": "socks",
-    "settings": {}
+    "protocol": "dokodemo-door",
+    "settings": {
+      "network": "tcp,udp",
+      "followRedirect": true
+    }
   }],
   "outbounds": [{
     "protocol": "vmess",
