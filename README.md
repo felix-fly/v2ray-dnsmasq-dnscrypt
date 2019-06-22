@@ -1,10 +1,10 @@
-# v2ray-dnsmasq-dnscrypt
+# v2ray-dnsmasq-doh
 
 本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://github.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
 
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
-* dnscrypt负责园外的解析（基于gw表）
+* dns-over-https(doh)负责园外的解析（基于gw表）
 * ipset记录园外域名的ip
 * iptables根据ipset转发指定流量到v2ray
 * v2ray只负责进站出站
@@ -31,7 +31,7 @@
 
 ## 新的方案
 
-作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。经过一番比较和尝试，决定采用dnsmasq+dnscrypt+ipset+iptables这一组合，openwrt本身已经有dnsmasq、iptables、ipset，dnscrypt准确的来说是一种规范，落实到软件上话有多种具体的实现，dnscrypt-proxy就是其中的一种，openwrt提供的就是这种，如果你用的是lede编译的固件，软件源需要添加自定义的源，就把官方的18.06.2的源地址填进去好了，除了某些特殊依赖内核版本的软件不能安装，大部分都可以正常安装使用。更新完列表然后搜索dnscrypt，安装luci-app-dnscrypt-proxy这个就好了，其它依赖的都会自动安装好。
+作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。具体的使用后面说明。
 
 ### 下载hosts文件
 
@@ -56,12 +56,29 @@ vi /etc/dnsmasq.conf
 ```
 加入下面的配置项
 ```
-conf-dir=/etc/config/v2ray/, *.hosts
+conf-dir=/etc/config/v2ray, *.hosts
+```
+dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用下面的命令测试一下
+```
+dnsmasq -test
 ```
 
-### dnscrypt-proxy配置
+### dns-over-https配置
 
-通过luci界面完成，选择一个可用的server，选择后保存并应用，然后切换到log那个tab看看是不是成功了。配置那个tab最下面的修改dnsmasq的复选框不要勾，这里应该有bug，取消保存了之后又勾上了，勾了也没关系，只要确认dnsmasq配置里转发dns没有设置为127.0.0.1:5353，还有第二个tab里忽略resolve没有选中，并且resolve文件地址为默认的文件。此处的调整是因为我们不是把所有的dns请求都转发给dnscrypt-proxy，而是默认用园内的dns服务器来解析，园内的dns服务器可以是自动获取的ISP提供的地址，也可以是你自己定义的114这种类似的公共dns地址。
+```
+vi /etc/config/https_dns_proxy
+```
+可以看到内置了google和couldflare两家的服务，但是由于众所周知的原因，可能不太好用，或者说不能用，修改成下面的，红鱼的地址填好，端口可以根据个人口味调整
+```
+config https_dns_proxy
+  option listen_addr '127.0.0.1'
+  option listen_port '5353'
+  option user 'nobody'
+  option group 'nogroup'
+  option subnet_addr ''
+  option proxy_server ''
+  option url_prefix 'https://dns.rubyfish.cn/dns-query?'
+```
 
 ### iptables规则
 
@@ -70,7 +87,6 @@ conf-dir=/etc/config/v2ray/, *.hosts
 ```
 ipset -N gw iphash
 iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
-iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
 
 ### v2ray配置
@@ -131,6 +147,10 @@ iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+
+2019-06-22
+* 采用dns-over-https代替dnscrypt
+* 更新广告列表
 
 2019-05-10
 * 增加另外一个广告源
