@@ -1,6 +1,6 @@
 # v2ray-dnsmasq-doh
 
-本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://github.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
+本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://gitee.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
 
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
