@@ -4,8 +4,8 @@
 
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
-* dns-over-https(doh)负责园外的解析（基于gw表）
-* ipset记录园外域名的ip
+* dns-over-https(doh)负责园外的解析（基于gw表或cn表）
+* ipset记录园外域名的ip（gw模式下）
 * iptables根据ipset转发指定流量到v2ray
 * v2ray只负责进站出站
 
@@ -33,13 +33,12 @@
 
 作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。具体的使用后面说明。
 
-### 下载hosts文件
+### 下载hosts和ips文件
 
-* [ad.hosts](./ad.hosts)
-* [gw.hosts](./gw.hosts)
-* [gw-mini.hosts](./gw-mini.hosts)
-
-gw-mini是gw的子集，仅包含了常用的一些网站域名，可根据个人需求选择。
+* [ad.hosts](./ad.hosts) # 屏蔽广告
+* [gw.hosts](./gw.hosts) # 某个域名列表，用于gw模式
+* [gw-mini.hosts](./gw-mini.hosts) # gw-mini是gw的子集，仅包含了常用的一些网站域名，可根据个人需求选择
+* [cn.conf](./cn.conf) # 从apnic提取出来的ip段集合，用于cn模式（园内直连）
 
 通过ssh上传的路由器，路径此处为
 ```
@@ -54,7 +53,7 @@ gw-mini是gw的子集，仅包含了常用的一些网站域名，可根据个�
 ```
 vi /etc/dnsmasq.conf
 ```
-加入下面的配置项
+加入下面的配置项，使用cn模式的话，只需要ad.hosts文件即可
 ```
 conf-dir=/etc/config/v2ray, *.hosts
 ```
@@ -84,10 +83,28 @@ config https_dns_proxy
 
 在 **luci-网络-防火墙-自定义规则** 下添加
 
+#### gw模式
+
 ```
 ipset -N gw iphash
 iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
+
+#### cn模式
+```
+ipset -R < /etc/config/v2ray/cn.conf
+
+iptables -t nat -N V2RAY
+iptables -t nat -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t nat -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t nat -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t nat -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t nat -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-ports 12345
+iptables -t nat -A PREROUTING -j V2RAY
+```
+
+cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.168.1.x段的根据实际情况修改。iptables配置要谨慎，错误的配置会造成无法连接路由器，只能重置路由器（恢复出厂设置）。
 
 ### v2ray配置
 
@@ -147,6 +164,8 @@ iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+2019-07-01
+* 增加cn模式
 
 2019-06-22
 * 采用dns-over-https代替dnscrypt
