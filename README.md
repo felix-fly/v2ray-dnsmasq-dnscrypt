@@ -41,7 +41,7 @@
 * [cn.conf](./cn.conf) # 从apnic提取出来的ip段集合，用于cn模式（园内直连）
 
 通过ssh上传的路由器，路径此处为
-```
+```base
 /etc/config/v2ray/
 ```
 你可以放到自己喜欢的路径下，注意与下面的dnsmasq.conf配置中保持一致即可。看到有人说可以开机自动复制到/tmp目录，然后dnsmasq从/tmp下读文件更快，/tmp路径实际是内存。
@@ -50,25 +50,25 @@
 
 可以在luci界面进行配置，也可以直接在dnsmasq.conf文件里配置，luci界面的优先级更高，换句话说就是会覆盖dnsmasq.conf文件里相同的配置项。
 
-```
+```base
 vi /etc/dnsmasq.conf
 ```
 加入下面的配置项，使用cn模式的话，只需要ad.hosts文件即可
-```
+```base
 conf-dir=/etc/config/v2ray, *.hosts
 ```
 dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用下面的命令测试一下
-```
+```base
 dnsmasq -test
 ```
 
 ### dns-over-https配置
 
-```
+```base
 vi /etc/config/https_dns_proxy
 ```
 可以看到内置了google和couldflare两家的服务，但是由于众所周知的原因，可能不太好用，或者说不能用，修改成下面的，红鱼的地址填好，端口可以根据个人口味调整
-```
+```base
 config https_dns_proxy
   option listen_addr '127.0.0.1'
   option listen_port '5353'
@@ -81,7 +81,7 @@ config https_dns_proxy
 
 也可以在服务器上安装自己的doh服务，以下基于Ubuntu 18.04
 
-```
+```base
 # install go
 sudo apt install golang-go
 # setup doh
@@ -95,13 +95,13 @@ sudo systemctl enable doh-server.service
 
 doh的配置文件在这里，一般不用改动
 
-```
+```base
 sudo vi /etc/dns-over-https/doh-server.conf
 ```
 
 修改服务器上nginx的配置，添加
 
-```
+```base
 location /dns-query {
   proxy_redirect off;
   proxy_set_header Host $http_host;
@@ -117,13 +117,13 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
 #### gw模式
 
-```
+```base
 ipset -N gw iphash
 iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
 
 #### cn模式
-```
+```base
 ipset -R < /etc/config/v2ray/cn.conf
 
 iptables -t nat -N V2RAY
@@ -142,7 +142,7 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 
 替换==包含的内容为你自己的配置
 
-```
+```json
 {
   "log": {
     "error": "./error.log",
