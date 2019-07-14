@@ -79,6 +79,38 @@ config https_dns_proxy
   option url_prefix 'https://dns.rubyfish.cn/dns-query?'
 ```
 
+也可以在服务器上安装自己的doh服务，以下基于Ubuntu 18.04
+
+```
+# install go
+sudo apt install golang-go
+# setup doh
+git clone https://github.com/m13253/dns-over-https.git
+cd dns-over-https
+make
+sudo make install
+sudo systemctl start doh-server.service
+sudo systemctl enable doh-server.service
+```
+
+doh的配置文件在这里，一般不用改动
+
+```
+sudo vi /etc/dns-over-https/doh-server.conf
+```
+
+修改服务器上nginx的配置，添加
+
+```
+location /dns-query {
+  proxy_redirect off;
+  proxy_set_header Host $http_host;
+  proxy_pass http://127.0.0.1:8053/dns-query;
+}
+```
+
+nginx需要对外提供https访问，相关教程很多，这里不再赘述。
+
 ### iptables规则
 
 在 **luci-网络-防火墙-自定义规则** 下添加
@@ -164,6 +196,9 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+2019-07-14
+* 增加自建doh服务
+
 2019-07-01
 * 增加cn模式
 
