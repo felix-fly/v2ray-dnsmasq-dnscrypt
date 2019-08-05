@@ -55,9 +55,9 @@ sort -u -o gw-mini gw-mini
 awk '{print "address=/"$0"/0.0.0.0"}' ad > ../ad.hosts
 
 # Generate gw.hosts and gw-mini.hosts file for dnsmasq
-awk '{print "server=/"$0"/127.0.0.1#5353"}' gw > ../gw.hosts
+awk '{print "server=/"$0"/127.0.0.1#1053"}' gw > ../gw.hosts
 awk '{print "ipset=/"$0"/gw"}' gw >> ../gw.hosts
-awk '{print "server=/"$0"/127.0.0.1#5353"}' gw-mini > ../gw-mini.hosts
+awk '{print "server=/"$0"/127.0.0.1#1053"}' gw-mini > ../gw-mini.hosts
 awk '{print "ipset=/"$0"/gw"}' gw-mini >> ../gw-mini.hosts
 
 cd ..

@@ -71,7 +71,7 @@ vi /etc/config/https_dns_proxy
 ```base
 config https_dns_proxy
   option listen_addr '127.0.0.1'
-  option listen_port '5353'
+  option listen_port '1053'
   option user 'nobody'
   option group 'nogroup'
   option subnet_addr ''
@@ -196,6 +196,9 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+2019-08-05
+* 修改doh端口为1053
+
 2019-07-14
 * 增加自建doh服务
 
