@@ -4,7 +4,7 @@ mkdir tmp
 cd tmp
 
 # Put cn ip range to ipset conf that from apnic
-wget -O apnic http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest
+wget -O apnic https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest
 echo "create cn hash:net family inet hashsize 1024 maxelem 65536" > ../cn.conf
 cat apnic | awk -F\| '/CN\|ipv4/ { printf("add cn %s/%d\n", $4, 32-log($5)/log(2)) }' >> ../cn.conf
 
@@ -16,12 +16,13 @@ cat sr.conf | grep Proxy|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > gw
 cat ../config/gw.conf >> gw
 
 # Uniq and sort gw list
-sort -u -o gw gw
+sort -d -u -o gw gw
 
 # ad
 cat sr.conf | grep Reject|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > ad
 # Another smaller ad hosts
 wget -O hosts https://cdn.jsdelivr.net/gh/neoFelhz/neohosts@gh-pages/basic/hosts
+sed -i.bak $'s/\r//g' hosts
 cat hosts | grep 0.0.0.0|awk '{print $2}' >> ad
 # Add custom ad hosts
 cat ../config/ad.conf >> ad
@@ -30,8 +31,8 @@ sed -i.bak 's/^\.//g' ad
 rm ad.bak
 
 # Uniq and sort ad list
-sort -u -o ad ad
-sort -u -o ../config/ad_blank.conf ../config/ad_blank.conf
+sort -d -u -o ad ad
+sort -d -u -o ../config/ad_blank.conf ../config/ad_blank.conf
 
 # Allow ad in blank list
 comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
@@ -49,7 +50,7 @@ cat gw | grep github >> gw-mini
 cat gw | grep v2ex >> gw-mini
 cat gw | grep v2ray >> gw-mini
 cat gw | grep cdn >> gw-mini
-sort -u -o gw-mini gw-mini
+sort -d -u -o gw-mini gw-mini
 
 # Generate ad.hosts file for dnsmasq
 awk '{print "address=/"$0"/0.0.0.0"}' ad > ../ad.hosts
