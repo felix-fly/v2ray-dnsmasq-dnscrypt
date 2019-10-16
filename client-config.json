@@ -1,0 +1,35 @@
+{
+  "log": {
+    "error": "./error.log",
+    "loglevel": "warning"
+  },
+  "inbounds": [{
+    "port": 12345,
+    "protocol": "dokodemo-door",
+    "settings": {
+      "network": "tcp",
+      "followRedirect": true
+    }
+  }],
+  "outbounds": [{
+    "protocol": "vmess",
+    "tag": "proxy",
+    "settings": {
+      "vnext": [{
+        "address": "==YOUR DOMAIN or SERVER ADDRESS==",
+        "port": 443,
+        "users": [{
+          "id": "==YOUR USER ID==",
+          "alterId": 4
+        }]
+      }]
+    },
+    "streamSettings": {
+      "network" : "ws",
+      "security": "tls",
+      "wsSettings": {
+        "path": "/==YOUR ENTRY PATH==/"
+      }
+    }
+  }]
+}

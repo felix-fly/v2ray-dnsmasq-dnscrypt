@@ -1,6 +1,6 @@
 # v2ray-dnsmasq-doh
 
-本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://gitee.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
+本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://github.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
 
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
@@ -140,51 +140,11 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 
 ### v2ray配置
 
-替换==包含的内容为你自己的配置
+注意替换==包含的内容为你自己的，配置采用ws作为底层传输协议，服务端及nginx相关配置可度娘。
 
-```json
-{
-  "log": {
-    "error": "./error.log",
-    "loglevel": "warning"
-  },
-  "inbounds": [{
-    "port": 12345,
-    "protocol": "dokodemo-door",
-    "settings": {
-      "network": "tcp,udp",
-      "followRedirect": true
-    }
-  }],
-  "outbounds": [{
-    "protocol": "vmess",
-    "tag": "proxy",
-    "settings": {
-      "vnext": [{
-        "address": "==YOUR DOMAIN or SERVER ADDRESS==",
-        "port": 443,
-        "users": [{
-          "id": "==YOUR USER ID==",
-          "alterId": 128,
-          "level": 1,
-          "security": "chacha20-poly1305"
-        }]
-      }]
-    },
-    "streamSettings": {
-      "network" : "ws",
-      "security": "tls",
-      "wsSettings": {
-        "path": "/==YOUR ENTRY PATH==/"
-      },
-      "tlsSettings": {
-        "serverName": "==YOUR DOMAIN or SERVER ADDRESS==",
-        "allowInsecure": true
-      }
-    }
-  }]
-}
-```
+[客户端](./client-config.json)
+
+[服务端](./server-config.json)
 
 ## 规则来源及更新
 
@@ -196,6 +156,9 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+2019-10-16
+* 更新配置样例
+
 2019-08-05
 * 修改doh端口为1053
 
