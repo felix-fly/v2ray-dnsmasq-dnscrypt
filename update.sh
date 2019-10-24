@@ -16,7 +16,7 @@ cat sr.conf | grep Proxy|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > gw
 cat ../config/gw.conf >> gw
 
 # Uniq and sort gw list
-sort -d -u -o gw gw
+sort -u -o gw gw
 
 # ad
 cat sr.conf | grep Reject|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > ad
@@ -31,8 +31,8 @@ sed -i.bak 's/^\.//g' ad
 rm ad.bak
 
 # Uniq and sort ad list
-sort -d -u -o ad ad
-sort -d -u -o ../config/ad_blank.conf ../config/ad_blank.conf
+sort -u -o ad ad
+sort -u -o ../config/ad_blank.conf ../config/ad_blank.conf
 
 # Allow ad in blank list
 comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
@@ -50,7 +50,7 @@ cat gw | grep github >> gw-mini
 cat gw | grep v2ex >> gw-mini
 cat gw | grep v2ray >> gw-mini
 cat gw | grep cdn >> gw-mini
-sort -d -u -o gw-mini gw-mini
+sort -u -o gw-mini gw-mini
 
 # Generate ad.hosts file for dnsmasq
 awk '{print "address=/"$0"/0.0.0.0"}' ad > ../ad.hosts
