@@ -29,6 +29,10 @@
       "security": "tls",
       "wsSettings": {
         "path": "/==YOUR ENTRY PATH==/"
+      },
+      "sockopt": {
+        "mark": 255,
+        "tproxy": "tproxy"
       }
     }
   }]

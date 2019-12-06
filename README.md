@@ -5,6 +5,7 @@
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
 * dns-over-https(doh)负责园外的解析（基于gw表或cn表）
+* 通过tproxy处理udp流量
 * ipset记录园外域名的ip（gw模式下）
 * iptables根据ipset转发指定流量到v2ray
 * v2ray只负责进站出站
@@ -33,15 +34,18 @@
 
 作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。具体的使用后面说明。
 
+现在又有了新的选择，将dns查询的UDP流量通过tproxy转交给v2ray来处理，这样就和之前s&s流行时的UDP转发一样了，可以解决dns误染的问题。
+
 ### 下载hosts和ips文件
 
 * [ad.hosts](./ad.hosts) # 屏蔽广告
 * [gw.hosts](./gw.hosts) # 某个域名列表，用于gw模式
+* [gw-udp.hosts](./gw.hosts) # 某个域名列表，用于gw模式，通过UDP转发，默认使用8.8.8.8，可自行替换为其它
 * [gw-mini.hosts](./gw-mini.hosts) # gw-mini是gw的子集，仅包含了常用的一些网站域名，可根据个人需求选择
 * [cn.conf](./cn.conf) # 从apnic提取出来的ip段集合，用于cn模式（园内直连）
 
 通过ssh上传的路由器，路径此处为
-```base
+```shell
 /etc/config/v2ray/
 ```
 你可以放到自己喜欢的路径下，注意与下面的dnsmasq.conf配置中保持一致即可。看到有人说可以开机自动复制到/tmp目录，然后dnsmasq从/tmp下读文件更快，/tmp路径实际是内存。
@@ -50,25 +54,27 @@
 
 可以在luci界面进行配置，也可以直接在dnsmasq.conf文件里配置，luci界面的优先级更高，换句话说就是会覆盖dnsmasq.conf文件里相同的配置项。
 
-```base
+```shell
 vi /etc/dnsmasq.conf
 ```
 加入下面的配置项，使用cn模式的话，只需要ad.hosts文件即可
-```base
+```shell
 conf-dir=/etc/config/v2ray, *.hosts
 ```
 dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用下面的命令测试一下
-```base
+```shell
 dnsmasq -test
 ```
 
 ### dns-over-https配置
 
-```base
+使用UDP转发时，不需要dns-over-https，请忽略。
+
+```shell
 vi /etc/config/https_dns_proxy
 ```
 可以看到内置了google和couldflare两家的服务，但是由于众所周知的原因，可能不太好用，或者说不能用，修改成下面的，红鱼的地址填好，端口可以根据个人口味调整
-```base
+```shell
 config https_dns_proxy
   option listen_addr '127.0.0.1'
   option listen_port '1053'
@@ -81,7 +87,7 @@ config https_dns_proxy
 
 也可以在服务器上安装自己的doh服务，以下基于Ubuntu 18.04
 
-```base
+```shell
 # install go
 sudo apt install golang-go
 # setup doh
@@ -95,13 +101,13 @@ sudo systemctl enable doh-server.service
 
 doh的配置文件在这里，一般不用改动
 
-```base
+```shell
 sudo vi /etc/dns-over-https/doh-server.conf
 ```
 
 修改服务器上nginx的配置，添加
 
-```base
+```shell
 location /dns-query {
   proxy_redirect off;
   proxy_set_header Host $http_host;
@@ -113,17 +119,36 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
 ### iptables规则
 
+iptables配置要谨慎，错误的配置会造成无法连接路由器，只能重置路由器（恢复出厂设置）。为了安全，可以先通过ssh登陆到路由器，直接执行需要添加的iptables规则进行测试，如果发现终端不再响应，可能就是规则有问题，这时重启路由即可，刚刚执行的规则不会被保存。测试正常再添加到系统配置里。
+
 在 **luci-网络-防火墙-自定义规则** 下添加
 
 #### gw模式
 
-```base
+```shell
+# Only TCP
 ipset -N gw iphash
 iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
 
+```shell
+# With UDP support
+ipset -N gw iphash
+ip rule add fwmark 1 table 100
+ip route add local 0.0.0.0/0 dev lo table 100
+iptables -t mangle -A PREROUTING -p tcp -m set --match-set gw dst -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A PREROUTING -p udp -m set --match-set gw dst -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A PREROUTING -p udp -d 8.8.8.8 -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
+# The following two lines are for router self (optional)
+iptables -t mangle -A OUTPUT -p tcp -m set --match-set gw dst -j MARK --set-mark 1
+iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
+```
+
 #### cn模式
-```base
+
+```shell
+# Only TCP
 ipset -R < /etc/config/v2ray/cn.conf
 
 iptables -t nat -N V2RAY
@@ -136,7 +161,22 @@ iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-ports 12345
 iptables -t nat -A PREROUTING -j V2RAY
 ```
 
-cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.168.1.x段的根据实际情况修改。iptables配置要谨慎，错误的配置会造成无法连接路由器，只能重置路由器（恢复出厂设置）。
+```shell
+# With UDP support
+ipset -R < /etc/config/v2ray/cn.conf
+
+iptables -t mangle -N V2RAY
+iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A V2RAY -p udp -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A PREROUTING -j V2RAY
+```
+
+cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.168.1.x段的根据实际情况修改。
 
 ### v2ray配置
 
@@ -156,6 +196,9 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，或着fork一份做你想要的。
 
 ## 更新记录
+2019-12-06
+* 增加UDP转发
+
 2019-10-16
 * 更新配置样例
 
