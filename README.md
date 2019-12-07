@@ -12,6 +12,8 @@
 
 dns-over-https和tproxy两者可以选择其一使用，使用tproxy是将dns查询的UDP流量通过转交给v2ray来处理，这样就和之前s&s流行时的UDP转发一样了，也可以解决dns误染的问题。同时也可以实现UDP加速的效果，比如某些游戏。
 
+gw模式使用UDP转发请下载gw-udp.hosts文件。
+
 ### 下载hosts和ips文件
 
 * [v2ray.service](./v2ray.service) # v2ray服务
@@ -145,9 +147,10 @@ iptables -t mangle -A PREROUTING -p tcp -m set --match-set gw dst -j TPROXY --on
 iptables -t mangle -A PREROUTING -p udp -m set --match-set gw dst -j TPROXY --on-port 12345 --tproxy-mark 1
 iptables -t mangle -A PREROUTING -p udp -d 8.8.8.8 -j TPROXY --on-port 12345 --tproxy-mark 1
 iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
+iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
 # The following two lines are for router self (optional)
 iptables -t mangle -A OUTPUT -p tcp -m set --match-set gw dst -j MARK --set-mark 1
-iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
+iptables -t mangle -A OUTPUT -p udp -m set --match-set gw dst -j MARK --set-mark 1
 ```
 
 #### cn模式
@@ -179,6 +182,10 @@ iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
 iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1
 iptables -t mangle -A V2RAY -p udp -j TPROXY --on-port 12345 --tproxy-mark 1
 iptables -t mangle -A PREROUTING -j V2RAY
+iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
+# The following two lines are for router self (optional)
+iptables -t mangle -A OUTPUT -p tcp -j MARK --set-mark 1
+iptables -t mangle -A OUTPUT -p udp -j MARK --set-mark 1
 ```
 
 cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.168.1.x段的根据实际情况修改。
