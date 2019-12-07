@@ -7,7 +7,7 @@
     "port": 12345,
     "protocol": "dokodemo-door",
     "settings": {
-      "network": "tcp",
+      "network": "tcp,udp",
       "followRedirect": true
     }
   }],
