@@ -15,6 +15,9 @@ cat sr.conf | grep Proxy|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > gw
 cat sr.conf | grep Proxy|grep IP-CIDR|awk -F, '{print $2}' > gw_ip
 echo "create gw hash:net family inet hashsize 1024 maxelem 65536" > ../gw.ips
 awk '{print "add gw "$0}' gw_ip >> ../gw.ips
+# Other popular sites
+wget -O other.conf https://raw.githubusercontent.com/Hackl0us/SS-Rule-Snippet/master/%E8%A7%84%E5%88%99%E7%89%87%E6%AE%B5%E9%9B%86/%E8%87%AA%E9%80%89%E8%A7%84%E5%88%99%E9%9B%86/%E5%B8%B8%E8%A7%81%E5%9B%BD%E5%A4%96%E7%BD%91%E7%AB%99%E5%88%97%E8%A1%A8.txt
+cat other.conf | grep Proxy|grep DOMAIN-SUFFIX|awk -F, '{print $2}' >> gw
 # Add custom domain
 cat ../config/gw.conf >> gw
 
