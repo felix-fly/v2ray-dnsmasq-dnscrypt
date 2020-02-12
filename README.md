@@ -5,12 +5,12 @@
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
 * 分流两种方式，根据需求选择
-* * gw模式：dnsmasq将园外域名解析后的ip地址加入ipset（推荐）
-* * cn模式：从apnic获取的园内ip段加入ipset
+  * gw模式：dnsmasq将园外域名解析后的ip地址加入ipset（推荐）
+  * cn模式：从apnic获取的园内ip段加入ipset
 * 园外域名解析有三种方式，任选其中一种即可
-* * v2ray开另外一个端口（推荐）
-* * 通过tproxy将udp流量转发给v2ray
-* * 转发给dns-over-https(doh)
+  * v2ray开另外一个端口（推荐）
+  * 通过tproxy将udp流量转发给v2ray
+  * 转发给dns-over-https(doh)
 * iptables屏蔽广告ip
 * iptables根据ipset转发指定流量
 * v2ray只负责进站出站
@@ -89,7 +89,7 @@ iptables配置要谨慎，错误的配置会造成无法连接路由器，只能
 
 此处提供的v2ray配置文件供参考使用，注意替换==包含的内容为你自己的，目前采用ws作为底层传输协议，服务端及nginx相关配置可度娘。
 
-服务端配置文件[server-config.json](./server-config.json)
+服务端配置文件 [server-config.json](./server-config.json)
 
 ### (1) v2ray开另外一个端口（推荐）
 
