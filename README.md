@@ -4,21 +4,26 @@
 
 * dnsmasq负责园内的解析（默认）
 * dnsmasq直接屏蔽广告域名
-* dns-over-https(doh)负责园外的解析（基于gw表或cn表）（可选）
-* 通过tproxy处理udp流量（可选）
-* ipset记录园外域名的ip（gw模式下）
-* iptables根据ipset转发指定流量到v2ray同时屏蔽广告ip
+* 分流两种方式，根据需求选择
+* * gw模式：dnsmasq将园外域名解析后的ip地址加入ipset（推荐）
+* * cn模式：从apnic获取的园内ip段加入ipset
+* 园外域名解析有三种方式，任选其中一种即可
+* * v2ray开另外一个端口（推荐）
+* * 通过tproxy将udp流量转发给v2ray
+* * 转发给dns-over-https(doh)
+* iptables屏蔽广告ip
+* iptables根据ipset转发指定流量
 * v2ray只负责进站出站
 
-dns-over-https和tproxy两者可以选择其一使用，使用tproxy是将dns查询的UDP流量通过转交给v2ray来处理，这样就和之前s&s流行时的UDP转发一样了，也可以解决dns误染的问题。同时也可以实现UDP加速的效果，比如某些游戏。
+gw列表将子域名提升到了主域名，同时增加了一些常见的园外网站，加快访问速度。
 
-### 下载v2ray
+## 下载v2ray
 
 可以从我的另一个repo的[release](https://github.com/felix-fly/v2ray-openwrt/releases)下找自己对应平台的文件，压缩包内只包含v2ray单文件，如果不喜欢可以自行从官方渠道下载。
 
-### 下载hosts和ips文件
+## 下载hosts和ips文件
 
-gw模式不需要cn.ips文件，cn模式不需要gwXXX文件，gw.hosts与gw-udp.hosts互斥，选择其一，前者用于仅TCP，后者配合支持UDP转发。
+gw模式不需要cn.ips文件。gw.hosts与gw-udp.hosts互斥，选择其一。
 
 * [v2ray.service](./v2ray.service) # v2ray服务
 * [ad.hosts](./ad.hosts) # 屏蔽广告
@@ -32,7 +37,7 @@ gw模式不需要cn.ips文件，cn模式不需要gwXXX文件，gw.hosts与gw-udp
 ```shell
 /etc/config/v2ray/
 ```
-你可以放到自己喜欢的路径下，注意与下面的dnsmasq.conf配置中保持一致即可。看到有人说可以开机自动复制到/tmp目录，然后dnsmasq从/tmp下读文件更快，/tmp路径实际是内存。
+你可以放到自己喜欢的路径下，注意与下面的dnsmasq.conf配置中保持一致即可。
 
 添加执行权限
 
@@ -40,7 +45,7 @@ gw模式不需要cn.ips文件，cn模式不需要gwXXX文件，gw.hosts与gw-udp
 chmod +x /etc/config/v2ray/v2ray
 ```
 
-### 添加v2ray服务
+## 添加v2ray服务
 
 服务自启动
 
@@ -62,14 +67,14 @@ ln -s /etc/config/v2ray/v2ray.service /etc/init.d/v2ray
 /etc/init.d/v2ray stop
 ```
 
-### dnsmasq配置
+## dnsmasq配置
 
 可以在luci界面进行配置，也可以直接在dnsmasq.conf文件里配置，luci界面的优先级更高，换句话说就是会覆盖dnsmasq.conf文件里相同的配置项。
 
 ```shell
 vi /etc/dnsmasq.conf
 ```
-加入下面的配置项，使用cn模式的话，只需要ad.hosts文件即可
+加入下面的配置项
 ```shell
 conf-dir=/etc/config/v2ray, *.hosts
 ```
@@ -78,9 +83,117 @@ dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用�
 dnsmasq -test
 ```
 
-### dns-over-https配置（可选）
+## 园外域名解析及iptables规则
 
-使用UDP转发时，不需要dns-over-https，请忽略。
+iptables配置要谨慎，错误的配置会造成无法连接路由器，只能重置路由器（恢复出厂设置）。为了安全，可以先通过ssh登陆到路由器，直接执行需要添加的iptables规则进行测试，如果发现终端不再响应，可能就是规则有问题，这时重启路由即可，刚刚执行的规则不会被保存。测试正常再添加到系统配置 **luci-网络-防火墙-自定义规则** 
+
+此处提供的v2ray配置文件供参考使用，注意替换==包含的内容为你自己的，目前采用ws作为底层传输协议，服务端及nginx相关配置可度娘。
+
+服务端配置文件[server-config.json](./server-config.json)
+
+### (1) v2ray开另外一个端口（推荐）
+
+配置简单，一般情况下路由器已包含必要的模块（ipset、dnsmasq-full），不需要额外安装。
+
+cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.168.1.x段的根据实际情况修改。
+
+客户端配置文件 [client-dns.json](./client-dns.json)
+
+gw模式防火墙规则
+
+```shell
+ipset -R < /etc/config/v2ray/ad.ips
+ipset -R < /etc/config/v2ray/gw.ips
+iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
+iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
+```
+
+cn模式防火墙规则
+
+```shell
+ipset -R < /etc/config/v2ray/ad.ips
+ipset -R < /etc/config/v2ray/cn.ips
+iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
+iptables -t mangle -N V2RAY
+iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t mangle -A V2RAY -p tcp -j REDIRECT --to-port 12345 
+iptables -t mangle -A PREROUTING -j V2RAY
+```
+
+### (2) 通过tproxy将udp流量转发给v2ray
+
+使用tproxy路由器需要安装iptables-mod-tproxy模块
+
+客户端配置文件 [client-tproxy.json](./client-tproxy.json)
+
+gw模式防火墙规则
+
+```shell
+ipset -R < /etc/config/v2ray/ad.ips
+ipset -R < /etc/config/v2ray/gw.ips
+ip rule add fwmark 1 table 100
+ip route add local 0.0.0.0/0 dev lo table 100
+iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
+iptables -t mangle -A PREROUTING -p tcp -m set --match-set gw dst -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A PREROUTING -p udp -d 8.8.8.8 -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
+iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
+```
+
+cn模式防火墙规则
+
+```shell
+ipset -R < /etc/config/v2ray/ad.ips
+ipset -R < /etc/config/v2ray/cn.ips
+ip rule add fwmark 1 table 100
+ip route add local 0.0.0.0/0 dev lo table 100
+iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
+iptables -t mangle -N V2RAY
+iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A V2RAY -p udp -j TPROXY --on-port 12345 --tproxy-mark 1
+iptables -t mangle -A PREROUTING -j V2RAY
+iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
+```
+
+### (3) 转发给dns-over-https(doh)
+
+客户端配置文件 [client-doh.json](./client-doh.json)
+
+gw模式防火墙规则
+
+```shell
+ipset -R < /etc/config/v2ray/ad.ips
+ipset -R < /etc/config/v2ray/gw.ips
+iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
+iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
+```
+
+cn模式防火墙规则
+
+```shell
+ipset -R < /etc/config/v2ray/ad.ips
+ipset -R < /etc/config/v2ray/cn.ips
+iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
+iptables -t mangle -N V2RAY
+iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t mangle -A V2RAY -p tcp -j REDIRECT --to-port 12345 
+iptables -t mangle -A PREROUTING -j V2RAY
+```
+
+路由器需要安装https_dns_proxy模块，安装后修改配置
 
 ```shell
 vi /etc/config/https_dns_proxy
@@ -97,7 +210,7 @@ config https_dns_proxy
   option url_prefix 'https://dns.rubyfish.cn/dns-query?'
 ```
 
-也可以在服务器上安装自己的doh服务，以下基于Ubuntu 18.04
+上游服务端也可以在服务器上安装自己的doh服务，以下基于Ubuntu 18.04
 
 ```shell
 # install go
@@ -129,92 +242,13 @@ location /dns-query {
 
 nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
-### iptables规则
-
-iptables配置要谨慎，错误的配置会造成无法连接路由器，只能重置路由器（恢复出厂设置）。为了安全，可以先通过ssh登陆到路由器，直接执行需要添加的iptables规则进行测试，如果发现终端不再响应，可能就是规则有问题，这时重启路由即可，刚刚执行的规则不会被保存。测试正常再添加到系统配置里。
-
-在 **luci-网络-防火墙-自定义规则** 下添加
-
-#### gw模式
-
-```shell
-# Only TCP
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/gw.ips
-iptables -t nat -A PREROUTING -m set --match-set ad dst -j REJECT
-iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
-```
-
-```shell
-# With UDP support
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/gw.ips
-ip rule add fwmark 1 table 100
-ip route add local 0.0.0.0/0 dev lo table 100
-iptables -t nat -A PREROUTING -m set --match-set ad dst -j REJECT
-iptables -t mangle -A PREROUTING -p tcp -m set --match-set gw dst -j TPROXY --on-port 12345 --tproxy-mark 1
-iptables -t mangle -A PREROUTING -p udp -m set --match-set gw dst -j TPROXY --on-port 12345 --tproxy-mark 1
-iptables -t mangle -A PREROUTING -p udp -d 8.8.8.8 -j TPROXY --on-port 12345 --tproxy-mark 1
-iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
-iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
-# The following two lines are for router self (optional)
-iptables -t mangle -A OUTPUT -p tcp -m set --match-set gw dst -j MARK --set-mark 1
-iptables -t mangle -A OUTPUT -p udp -m set --match-set gw dst -j MARK --set-mark 1
-```
-
-#### cn模式
-
-```shell
-# Only TCP
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/cn.ips
-iptables -t nat -A PREROUTING -m set --match-set ad dst -j REJECT
-iptables -t nat -N V2RAY
-iptables -t nat -A V2RAY -d 0.0.0.0 -j RETURN
-iptables -t nat -A V2RAY -d 127.0.0.1 -j RETURN
-iptables -t nat -A V2RAY -d 192.168.1.0/24 -j RETURN
-iptables -t nat -A V2RAY -d YOUR_SERVER_IP -j RETURN
-iptables -t nat -A V2RAY -m set --match-set cn dst -j RETURN
-iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-ports 12345
-iptables -t nat -A PREROUTING -j V2RAY
-```
-
-```shell
-# With UDP support
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/cn.ips
-iptables -t nat -A PREROUTING -m set --match-set ad dst -j REJECT
-iptables -t mangle -N V2RAY
-iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
-iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
-iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
-iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
-iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
-iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-port 12345 --tproxy-mark 1
-iptables -t mangle -A V2RAY -p udp -j TPROXY --on-port 12345 --tproxy-mark 1
-iptables -t mangle -A PREROUTING -j V2RAY
-iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
-# The following two lines are for router self (optional)
-iptables -t mangle -A OUTPUT -p tcp -j MARK --set-mark 1
-iptables -t mangle -A OUTPUT -p udp -j MARK --set-mark 1
-```
-
-cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.168.1.x段的根据实际情况修改。
-
-### v2ray配置
-
-注意替换==包含的内容为你自己的，配置采用ws作为底层传输协议，服务端及nginx相关配置可度娘。
-
-[客户端](./client-config.json)
-
-[服务端](./server-config.json)
-
 ## 规则来源及更新
 
 主要规则取自
 
-* [https://github.com/h2y/Shadowrocket-ADBlock-Rules](https://github.com/h2y/Shadowrocket-ADBlock-Rules)
-* [https://github.com/neoFelhz/neohosts](https://github.com/neoFelhz/neohosts)
+* https://github.com/h2y/Shadowrocket-ADBlock-Rules
+* https://github.com/neoFelhz/neohosts
+* https://github.com/Hackl0us/SS-Rule-Snippet
 
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，添加删除你想要的site，或着fork一份做你想要的。
 
@@ -243,6 +277,10 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。
 
 ## 更新记录
+2020-02-12
+* 优化了文档内容及顺序
+* gw列表优化
+
 2019-12-19
 * 增加gw及ad列表中ip部分的处理
 * 去掉gw-mini用处不大
