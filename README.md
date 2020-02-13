@@ -105,7 +105,7 @@ gw模式防火墙规则
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/gw.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
-iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
+iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
 
 cn模式防火墙规则
@@ -174,7 +174,7 @@ gw模式防火墙规则
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/gw.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
-iptables -t nat -A OUTPUT -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
+iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
 
 cn模式防火墙规则
