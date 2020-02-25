@@ -15,7 +15,7 @@
 * iptables根据ipset转发指定流量
 * v2ray只负责进站出站
 
-gw列表将子域名提升到了主域名，同时增加了一些常见的园外网站，加快访问速度。
+需要用dnsmasq-full替换dnsmasq才能支持ipset，gw列表将子域名提升到了主域名，同时增加了一些常见的园外网站，加快访问速度。
 
 ## 下载v2ray
 
@@ -80,7 +80,7 @@ conf-dir=/etc/config/v2ray, *.hosts
 ```
 dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用下面的命令测试一下
 ```shell
-dnsmasq -test
+dnsmasq --test
 ```
 
 ## 园外域名解析及iptables规则
