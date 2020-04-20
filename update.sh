@@ -1,5 +1,9 @@
 #!/bin/bash
 
+sort -u -o config/gw.conf config/gw.conf
+sort -u -o config/ad.conf config/ad.conf
+sort -u -o config/ad_blank.conf config/ad_blank.conf
+
 mkdir tmp
 cd tmp
 
@@ -44,7 +48,6 @@ awk '{print "add ad "$0}' ad_ip >> ../ad.ips
 
 # Uniq and sort ad list
 sort -u -o ad ad
-sort -u -o ../config/ad_blank.conf ../config/ad_blank.conf
 
 # Allow ad in blank list
 comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
