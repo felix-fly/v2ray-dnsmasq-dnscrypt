@@ -114,14 +114,14 @@ cn模式防火墙规则
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/cn.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
-iptables -t mangle -N V2RAY
-iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
-iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
-iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
-iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
-iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
-iptables -t mangle -A V2RAY -p tcp -j REDIRECT --to-port 12345 
-iptables -t mangle -A PREROUTING -j V2RAY
+iptables -t nat -N V2RAY
+iptables -t nat -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t nat -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t nat -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t nat -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t nat -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-port 12345 
+iptables -t nat -A PREROUTING -j V2RAY
 ```
 
 ### (2) 通过tproxy将udp流量转发给v2ray
@@ -183,14 +183,14 @@ cn模式防火墙规则
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/cn.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
-iptables -t mangle -N V2RAY
-iptables -t mangle -A V2RAY -d 0.0.0.0 -j RETURN
-iptables -t mangle -A V2RAY -d 127.0.0.1 -j RETURN
-iptables -t mangle -A V2RAY -d 192.168.1.0/24 -j RETURN
-iptables -t mangle -A V2RAY -d YOUR_SERVER_IP -j RETURN
-iptables -t mangle -A V2RAY -m set --match-set cn dst -j RETURN
-iptables -t mangle -A V2RAY -p tcp -j REDIRECT --to-port 12345 
-iptables -t mangle -A PREROUTING -j V2RAY
+iptables -t nat -N V2RAY
+iptables -t nat -A V2RAY -d 0.0.0.0 -j RETURN
+iptables -t nat -A V2RAY -d 127.0.0.1 -j RETURN
+iptables -t nat -A V2RAY -d 192.168.1.0/24 -j RETURN
+iptables -t nat -A V2RAY -d YOUR_SERVER_IP -j RETURN
+iptables -t nat -A V2RAY -m set --match-set cn dst -j RETURN
+iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-port 12345 
+iptables -t nat -A PREROUTING -j V2RAY
 ```
 
 路由器需要安装https_dns_proxy模块，安装后修改配置
