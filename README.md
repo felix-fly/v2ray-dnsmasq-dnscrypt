@@ -34,14 +34,14 @@ gw模式不需要cn.ips文件。gw.hosts与gw-udp.hosts互斥，选择其一。
 * [cn.ips](./cn.ips) # 从apnic提取出来的ip段集合，用于cn模式（园内直连）
 
 通过ssh上传到路由器，路径此处为
-```shell
+```bash
 /etc/config/v2ray/
 ```
 你可以放到自己喜欢的路径下，注意与下面的dnsmasq.conf配置中保持一致即可。
 
 添加执行权限
 
-```shell
+```bash
 chmod +x /etc/config/v2ray/v2ray
 ```
 
@@ -49,7 +49,7 @@ chmod +x /etc/config/v2ray/v2ray
 
 服务自启动
 
-```shell
+```bash
 chmod +x /etc/config/v2ray/v2ray.service
 ln -s /etc/config/v2ray/v2ray.service /etc/init.d/v2ray
 /etc/init.d/v2ray enable
@@ -57,13 +57,13 @@ ln -s /etc/config/v2ray/v2ray.service /etc/init.d/v2ray
 
 开启
 
-```shell
+```bash
 /etc/init.d/v2ray start
 ```
 
 关闭
 
-```shell
+```bash
 /etc/init.d/v2ray stop
 ```
 
@@ -71,15 +71,15 @@ ln -s /etc/config/v2ray/v2ray.service /etc/init.d/v2ray
 
 可以在luci界面进行配置，也可以直接在dnsmasq.conf文件里配置，luci界面的优先级更高，换句话说就是会覆盖dnsmasq.conf文件里相同的配置项。
 
-```shell
+```bash
 vi /etc/dnsmasq.conf
 ```
 加入下面的配置项
-```shell
+```bash
 conf-dir=/etc/config/v2ray, *.hosts
 ```
 dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用下面的命令测试一下
-```shell
+```bash
 dnsmasq --test
 ```
 
@@ -101,7 +101,7 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 
 gw模式防火墙规则
 
-```shell
+```bash
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/gw.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
@@ -110,7 +110,7 @@ iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-
 
 cn模式防火墙规则
 
-```shell
+```bash
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/cn.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
@@ -132,7 +132,7 @@ iptables -t nat -A PREROUTING -j V2RAY
 
 gw模式防火墙规则
 
-```shell
+```bash
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/gw.ips
 ip rule add fwmark 1 table 100
@@ -146,7 +146,7 @@ iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
 
 cn模式防火墙规则
 
-```shell
+```bash
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/cn.ips
 ip rule add fwmark 1 table 100
@@ -170,7 +170,7 @@ iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
 
 gw模式防火墙规则
 
-```shell
+```bash
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/gw.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
@@ -179,7 +179,7 @@ iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-
 
 cn模式防火墙规则
 
-```shell
+```bash
 ipset -R < /etc/config/v2ray/ad.ips
 ipset -R < /etc/config/v2ray/cn.ips
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
@@ -195,11 +195,11 @@ iptables -t nat -A PREROUTING -j V2RAY
 
 路由器需要安装https_dns_proxy模块，安装后修改配置
 
-```shell
+```bash
 vi /etc/config/https_dns_proxy
 ```
 可以看到内置了google和couldflare两家的服务，但是由于众所周知的原因，可能不太好用，或者说不能用，修改成下面的，红鱼的地址填好，端口可以根据个人口味调整
-```shell
+```bash
 config https_dns_proxy
   option listen_addr '127.0.0.1'
   option listen_port '1053'
@@ -212,7 +212,7 @@ config https_dns_proxy
 
 上游服务端也可以在服务器上安装自己的doh服务，以下基于Ubuntu 18.04
 
-```shell
+```bash
 # install go
 sudo apt install golang-go
 # setup doh
@@ -226,13 +226,13 @@ sudo systemctl enable doh-server.service
 
 doh的配置文件在这里，一般不用改动
 
-```shell
+```bash
 sudo vi /etc/dns-over-https/doh-server.conf
 ```
 
 修改服务器上nginx的配置，添加
 
-```shell
+```bash
 location /dns-query {
   proxy_redirect off;
   proxy_set_header Host $http_host;
