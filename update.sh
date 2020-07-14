@@ -15,7 +15,7 @@ cat apnic | awk -F\| '/CN\|ipv4/ { printf("add cn %s/%d\n", $4, 32-log($5)/log(2
 wget -O sr.conf https://raw.githubusercontent.com/h2y/Shadowrocket-ADBlock-Rules/master/sr_top500_banlist_ad.conf
 
 # gw
-cat sr.conf | grep Proxy|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > gw
+cat sr.conf | grep Proxy|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > gw.tmp
 cat sr.conf | grep Proxy|grep IP-CIDR|awk -F, '{print $2}' > gw_ip
 echo "create gw hash:net family inet hashsize 1024 maxelem 65536" > ../gw.ips
 awk '{print "add gw "$0}' gw_ip >> ../gw.ips
