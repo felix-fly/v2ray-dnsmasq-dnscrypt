@@ -1,8 +1,4 @@
 {
-  "log": {
-    "error": "./error.log",
-    "loglevel": "warning"
-  },
   "inbounds": [{
     "port": 12345,
     "protocol": "dokodemo-door",
@@ -16,7 +12,7 @@
     "tag": "proxy",
     "settings": {
       "vnext": [{
-        "address": "==YOUR DOMAIN or SERVER ADDRESS==",
+        "address": "==YOUR DOMAIN==",
         "port": 443,
         "users": [{
           "id": "==YOUR USER ID==",
@@ -27,6 +23,9 @@
     "streamSettings": {
       "network" : "ws",
       "security": "tls",
+      "tlsSettings" : {
+        "allowInsecure" : false
+      },
       "wsSettings": {
         "path": "/==YOUR ENTRY PATH==/"
       }
