@@ -249,6 +249,7 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 * https://github.com/h2y/Shadowrocket-ADBlock-Rules
 * https://github.com/neoFelhz/neohosts
 * https://github.com/Hackl0us/SS-Rule-Snippet
+* https://github.com/privacy-protection-tools/anti-AD
 
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，添加删除你想要的site，或着fork一份做你想要的。
 
@@ -277,6 +278,10 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。
 
 ## 更新记录
+2020-11-05
+* 增加了新的广告源
+* 优化ad规则，减小文件体积
+
 2020-02-12
 * 优化了文档内容及顺序
 * gw列表优化
