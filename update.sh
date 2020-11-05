@@ -36,9 +36,9 @@ cat sr.conf | grep Reject|grep DOMAIN-SUFFIX|awk -F, '{print $2}' > ad
 wget -O hosts https://cdn.jsdelivr.net/gh/neoFelhz/neohosts@gh-pages/basic/hosts
 sed -i.bak $'s/\r//g' hosts
 cat hosts | grep 0.0.0.0|awk '{print $2}' >> ad
-# anti-ad
+# Put anti-ad to ad-ext
 wget -O anti https://anti-ad.net/anti-ad-for-dnsmasq.conf
-cat anti | grep address=/|awk -F/ '{print $2}' >> ad
+cat anti | grep address=/|awk -F/ '{print $2}' > ad-ext
 # Add custom ad hosts
 cat ../config/ad.conf >> ad
 # Remove the first dot ex: .abc.com
@@ -51,13 +51,19 @@ awk '{print "add ad "$0}' ad_ip >> ../ad.ips
 
 # Uniq and sort ad list
 sort -u -o ad ad
+sort -u -o ad-ext ad-ext
 
 # Allow ad in blank list
 comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
 rm ad && mv ad.tmp ad
 
+# Remove duplicate ad
+comm -2 -3 ad-ext ad > ad-ext.tmp
+rm ad-ext && mv ad-ext.tmp ad-ext
+
 # Generate ad.hosts file for dnsmasq
 awk '{print "address=/"$0"/"}' ad > ../ad.hosts
+awk '{print "address=/"$0"/"}' ad-ext > ../ad-ext.hosts
 
 # Generate gw.hosts file for dnsmasq
 awk '{print "server=/"$0"/127.0.0.1#1053"}' gw > ../gw.hosts

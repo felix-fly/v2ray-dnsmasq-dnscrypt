@@ -25,8 +25,11 @@
 
 gw模式不需要cn.ips文件。gw.hosts与gw-udp.hosts互斥，选择其一。
 
+ad增加了一个: ad-ext.hosts 为了避免较多的误伤，可以根据需要酌情使用。
+
 * [v2ray.service](./v2ray.service) # v2ray服务
 * [ad.hosts](./ad.hosts) # 屏蔽广告
+* [ad-ext.hosts](./ad-ext.hosts) # 更狠的屏蔽广告
 * [ad.ips](./ad.ips) # 广告ip
 * [gw.hosts](./gw.hosts) # 某个域名列表，用于gw模式
 * [gw.ips](./gw.ips) # 某个ip列表，用于gw模式
@@ -279,7 +282,7 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
 ## 更新记录
 2020-11-05
-* 增加了新的广告源
+* 增加了新的广告源，单独生成另外一个文件
 * 优化ad规则，减小文件体积
 
 2020-02-12
