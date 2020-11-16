@@ -53,13 +53,13 @@ awk '{print "add ad "$0}' ad_ip >> ../ad.ips
 sort -u -o ad ad
 sort -u -o ad-ext ad-ext
 
-# Allow ad in blank list
-comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
-rm ad && mv ad.tmp ad
-
 # Remove duplicate ad
 comm -2 -3 ad-ext ad > ad-ext.tmp
 rm ad-ext && mv ad-ext.tmp ad-ext
+
+# Allow ad in blank list
+comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
+rm ad && mv ad.tmp ad
 
 # Generate ad.hosts file for dnsmasq
 awk '{print "address=/"$0"/"}' ad > ../ad.hosts
