@@ -1,4 +1,21 @@
-# v2ray-dnsmasq-doh
+# 目录
+
+* [目录](#目录)
+* [关于 v2ray-dnsmasq-doh](#关于-v2ray-dnsmasq-doh)
+* [安装配置](#安装配置)
+  * [下载v2ray](#下载v2ray)
+  * [下载hosts和ips文件](#下载hosts和ips文件)
+  * [添加v2ray服务](#添加v2ray服务)
+  * [dnsmasq配置](#dnsmasq配置)
+* [园外域名解析及iptables规则](#园外域名解析及iptables规则)
+  * [(1) v2ray开另外一个端口（推荐）](#1-v2ray开另外一个端口推荐)
+  * [(2) 通过tproxy将udp流量转发给v2ray](#2-通过tproxy将udp流量转发给v2ray)
+  * [(3) 转发给dns-over-https(doh)](#3-转发给dns-over-httpsdoh)
+* [规则来源及更新](#规则来源及更新)
+* [后话](#后话)
+* [更新记录](#更新记录)
+
+# 关于 v2ray-dnsmasq-doh
 
 本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://github.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
 
@@ -16,6 +33,16 @@
 * v2ray只负责进站出站
 
 需要用dnsmasq-full替换dnsmasq才能支持ipset，gw列表将子域名提升到了主域名，同时增加了一些常见的园外网站，加快访问速度。
+
+该方案v2ray只负责部分流量，对于一般百兆宽带用户，基本可以满足日常使用，如使用xray的xtls协议性能还可进一步提升。
+
+当然现在千兆宽带用户越来越多，单体硬路由性能毕竟有限，无法承载大流量需求，如果预算充足可以上软路由。笔者也曾经有过一段时间的纠结，最终找到了更具性价比的方案：
+
+**使用树莓派4b或(友善)NanoPi R2S安装openwrt配置独立服务 v2ray/xray/trojan，千兆高速解决方案，更高！更快！更强！性价比超软路由！**
+
+* [https://github.com/felix-fly/openwrt-raspberry](https://github.com/felix-fly/openwrt-raspberry)
+
+# 安装配置
 
 ## 下载v2ray
 
@@ -86,7 +113,7 @@ dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用�
 dnsmasq --test
 ```
 
-## 园外域名解析及iptables规则
+# 园外域名解析及iptables规则
 
 iptables配置要谨慎，错误的配置会造成无法连接路由器，只能重置路由器（恢复出厂设置）。为了安全，可以先通过ssh登陆到路由器，直接执行需要添加的iptables规则进行测试，如果发现终端不再响应，可能就是规则有问题，这时重启路由即可，刚刚执行的规则不会被保存。测试正常再添加到系统配置 **luci-网络-防火墙-自定义规则** 
 
@@ -94,7 +121,7 @@ iptables配置要谨慎，错误的配置会造成无法连接路由器，只能
 
 服务端配置文件 [server-config.json](./server-config.json)
 
-### (1) v2ray开另外一个端口（推荐）
+## (1) v2ray开另外一个端口（推荐）
 
 配置简单，一般情况下路由器已包含必要的模块（ipset、dnsmasq-full），不需要额外安装。
 
@@ -127,7 +154,7 @@ iptables -t nat -A V2RAY -p tcp -j REDIRECT --to-port 12345
 iptables -t nat -A PREROUTING -j V2RAY
 ```
 
-### (2) 通过tproxy将udp流量转发给v2ray
+## (2) 通过tproxy将udp流量转发给v2ray
 
 使用tproxy路由器需要安装iptables-mod-tproxy模块
 
@@ -167,7 +194,7 @@ iptables -t mangle -A PREROUTING -j V2RAY
 iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
 ```
 
-### (3) 转发给dns-over-https(doh)
+## (3) 转发给dns-over-https(doh)
 
 客户端配置文件 [client-doh.json](./client-doh.json)
 
@@ -245,7 +272,7 @@ location /dns-query {
 
 nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
-## 规则来源及更新
+# 规则来源及更新
 
 主要规则取自
 
@@ -256,7 +283,7 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
 生成的hosts文件不定期更新，你也可以clone到本地自己更新规则，添加删除你想要的site，或着fork一份做你想要的。
 
-## 后话
+# 后话
 
 已经有了简单的v2ray全包方案，为什么还要这个看上去要复杂的多的方案？需求。是的。
 
@@ -276,11 +303,15 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
 
   又翻了翻v2ray的文档、各种文章、论坛，也没什么收获，看来只能自己想办法了。那么就来分析一下，目前的方案所有的流量都进v2ray，然后由v2ray根据路由规则选择不同的出站口，这样一来v2ray就是一个中心节点，承担了全部的工作（兄弟，你辛苦了），小流量情况下完全ok，但是大流量时cpu就会上去。基于此，于是想把路由的这块任务分离出去，v2ray只负责单一的进站和出站，只有需要的流量才会进到v2ray，一般情况下的下载都是园内为主，所以这样可以大大的减轻v2ray的工作量。
 
-## 新的方案
+* 新的方案
 
-作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。
+  作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。
 
-## 更新记录
+# 更新记录
+2020-12-23
+* 添加目录
+* 整理文案
+
 2020-11-05
 * 增加了新的广告源，单独生成另外一个文件
 * 优化ad规则，减小文件体积
