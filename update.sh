@@ -37,7 +37,7 @@ wget -O hosts https://cdn.jsdelivr.net/gh/neoFelhz/neohosts@gh-pages/basic/hosts
 sed -i.bak $'s/\r//g' hosts
 cat hosts | grep 0.0.0.0|awk '{print $2}' >> ad
 # Put anti-ad to ad-ext
-wget -O anti https://anti-ad.net/anti-ad-for-dnsmasq.conf
+wget -O anti https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/adblock-for-dnsmasq.conf
 cat anti | grep address=/|awk -F/ '{print $2}' > ad-ext
 # Add custom ad hosts
 cat ../config/ad.conf >> ad
@@ -59,7 +59,9 @@ rm ad-ext && mv ad-ext.tmp ad-ext
 
 # Allow ad in blank list
 comm -2 -3 ad ../config/ad_blank.conf > ad.tmp
+comm -2 -3 ad-ext ../config/ad_blank.conf > ad-ext.tmp
 rm ad && mv ad.tmp ad
+rm ad-ext && mv ad-ext.tmp ad-ext
 
 # Generate ad.hosts file for dnsmasq
 awk '{print "address=/"$0"/"}' ad > ../ad.hosts
