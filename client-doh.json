@@ -9,7 +9,6 @@
   }],
   "outbounds": [{
     "protocol": "vmess",
-    "tag": "proxy",
     "settings": {
       "vnext": [{
         "address": "==YOUR DOMAIN==",
