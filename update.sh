@@ -64,6 +64,8 @@ rm ad && mv ad.tmp ad
 rm ad-ext && mv ad-ext.tmp ad-ext
 
 # Generate ad.hosts file for dnsmasq
+# awk '{print "0.0.0.0 "$0}' ad > ../ad.hosts
+# awk '{print "0.0.0.0 "$0}' ad-ext > ../ad-ext.hosts
 awk '{print "address=/"$0"/"}' ad > ../ad.hosts
 awk '{print "address=/"$0"/"}' ad-ext > ../ad-ext.hosts
 
