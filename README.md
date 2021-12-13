@@ -129,8 +129,8 @@ cn模式需要将YOUR_SERVER_IP替换为实际的ip地址，局域网不是192.1
 gw模式防火墙规则
 
 ```bash
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/gw.ips
+ipset create ad hash:net
+ipset create gw hash:net
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
 iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
@@ -138,8 +138,8 @@ iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-
 cn模式防火墙规则
 
 ```bash
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/cn.ips
+ipset create ad hash:net
+ipset create gw hash:net
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
 iptables -t nat -N V2RAY
 iptables -t nat -A V2RAY -d 0.0.0.0 -j RETURN
@@ -160,8 +160,8 @@ iptables -t nat -A PREROUTING -j V2RAY
 gw模式防火墙规则
 
 ```bash
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/gw.ips
+ipset create ad hash:net
+ipset create gw hash:net
 ip rule add fwmark 1 table 100
 ip route add local 0.0.0.0/0 dev lo table 100
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
@@ -174,8 +174,8 @@ iptables -t mangle -A OUTPUT -p udp -d 8.8.8.8 -j MARK --set-mark 1
 cn模式防火墙规则
 
 ```bash
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/cn.ips
+ipset create ad hash:net
+ipset create gw hash:net
 ip rule add fwmark 1 table 100
 ip route add local 0.0.0.0/0 dev lo table 100
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
@@ -198,8 +198,8 @@ iptables -t mangle -A OUTPUT -m mark --mark 255 -j RETURN
 gw模式防火墙规则
 
 ```bash
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/gw.ips
+ipset create ad hash:net
+ipset create gw hash:net
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
 iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-port 12345
 ```
@@ -207,8 +207,8 @@ iptables -t nat -A PREROUTING -p tcp -m set --match-set gw dst -j REDIRECT --to-
 cn模式防火墙规则
 
 ```bash
-ipset -R < /etc/config/v2ray/ad.ips
-ipset -R < /etc/config/v2ray/cn.ips
+ipset create ad hash:net
+ipset create gw hash:net
 iptables -t filter -A INPUT -m set --match-set ad dst -j REJECT
 iptables -t nat -N V2RAY
 iptables -t nat -A V2RAY -d 0.0.0.0 -j RETURN
