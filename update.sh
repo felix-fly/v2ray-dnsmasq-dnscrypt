@@ -26,12 +26,12 @@ sort -u -o gw gw.tmp
 
 # Put anti-ad to ad
 wget -O anti https://raw.githubusercontent.com/privacy-protection-tools/anti-AD/master/adblock-for-dnsmasq.conf
-cat anti | grep address=/|awk -F/ '{print $2}' > ad
+cat anti | grep address=/|awk -F/ '{print $2}' > ad.tmp
+# Remove the first dot ex: .abc.com
+sed 's/^\.//g' ad.tmp > ad
+
 # Add custom ad hosts
 cat ../config/ad.conf >> ad
-# Remove the first dot ex: .abc.com
-sed -i.bak 's/^\.//g' ad
-rm ad.bak
 
 # Uniq and sort ad list
 sort -u -o ad ad
