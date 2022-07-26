@@ -13,7 +13,10 @@ echo "create cn hash:net family inet hashsize 1024 maxelem 65536" > ../cn.ips
 cat apnic | awk -F\| '/CN\|ipv4/ { printf("add cn %s/%d\n", $4, 32-log($5)/log(2)) }' >> ../cn.ips
 
 # gw
-wget -O gw.tmp https://cokebar.github.io/gfwlist2dnsmasq/gfwlist_domain.txt
+# wget -O gw.tmp https://cokebar.github.io/gfwlist2dnsmasq/gfwlist_domain.txt
+wget -O gw.sh https://github.com/cokebar/gfwlist2dnsmasq/raw/master/gfwlist2dnsmasq.sh
+chmod +x gw.sh
+./gw.sh -l -o gw.tmp
 
 # extend to top domain
 # cat gw | awk -F. '{if ($(NF-1) ~ /^(com|org|net|gov|edu|info|co|in)$/ && NF>2) print $(NF-2)"."$(NF-1)"."$(NF); else print $(NF-1)"."$(NF)}' > gw.tmp
