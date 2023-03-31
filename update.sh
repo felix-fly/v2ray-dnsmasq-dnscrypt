@@ -53,5 +53,12 @@ awk '{print "ipset=/"$0"/gw"}' gw >> ../gw.hosts
 awk '{print "server=/"$0"/8.8.8.8"}' gw > ../gw-udp.hosts
 awk '{print "ipset=/"$0"/gw"}' gw >> ../gw-udp.hosts
 
+# change for smartdns
+sed 's/=/ /g' ../ad.hosts > tmp1
+sed 's/\/$/\/#/g' tmp1 > ../smartdns/ad.hosts
+sed 's/server=/nameserver /g' ../gw.hosts > tmp1
+sed 's/127.0.0.1#1053/gw/g' tmp1 > tmp2
+sed 's/=/ /g' tmp2 > ../smartdns/gw.hosts
+
 cd ..
 rm -rf tmp

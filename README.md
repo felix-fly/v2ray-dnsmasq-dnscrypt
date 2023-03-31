@@ -19,10 +19,12 @@
 
 本文为在路由器openwrt中使用v2ray的另一种解决方案，之前相对简单的方案在这里[v2ray-openwrt](https://github.com/felix-fly/v2ray-openwrt)。重点说下本方案的不同或者特点：
 
-* dnsmasq负责园内的解析（默认）
-* dnsmasq直接屏蔽广告域名
+**dnsmasq 加载大批量广告列表后性能不是很好，推荐使用 smartdns 代替。**
+
+* dnsmasq/smartdns 负责园内的解析（默认）
+* dnsmasq/smartdns 直接屏蔽广告域名
 * 分流两种方式，根据需求选择
-  * gw模式：dnsmasq将园外域名解析后的ip地址加入ipset（推荐）
+  * gw模式：dnsmasq/smartdns 将园外域名解析后的ip地址加入ipset（推荐）
   * cn模式：从apnic获取的园内ip段加入ipset
 * 园外域名解析有三种方式，任选其中一种即可
   * v2ray开另外一个端口（推荐）
@@ -94,7 +96,7 @@ ln -s /etc/config/v2ray/v2ray.service /etc/init.d/v2ray
 /etc/init.d/v2ray stop
 ```
 
-## dnsmasq配置
+## dnsmasq 解析
 
 可以在luci界面进行配置，也可以直接在dnsmasq.conf文件里配置，luci界面的优先级更高，换句话说就是会覆盖dnsmasq.conf文件里相同的配置项。
 
@@ -109,6 +111,29 @@ dnsmasq配置不正确可能会导致无法上网，这里修改完了可以用�
 ```bash
 dnsmasq --test
 ```
+
+## 使用 smartdns 代替 dnsmasq 解析
+
+在luci界面DNS高级设置里，修改DNS服务器端口为0
+
+登录路由器执行
+
+```bash
+opkg install smartdns
+cp /usr/sbin/smartdns /tmp
+opkg remove smartdns
+mkdir /etc/smartnds
+mv /tmp/smartdns /etc/smartdns/
+```
+
+将仓库 smartdns 目录下的配置文件上传到路由器 /etc/smartdns 后执行
+
+```bash
+chmod +x /etc/smartdns/check.sh /etc/smartdns/smartdns
+echo "*/2 * * * * /etc/smartdns/check.sh > /dev/null" >> /etc/crontabs/root
+```
+
+/etc/smartdns/my.conf 文件可按需修改，比如：增加运营商DNS等
 
 # 园外域名解析及iptables规则
 
@@ -303,6 +328,9 @@ nginx需要对外提供https访问，相关教程很多，这里不再赘述。
   作战方针制定好了那就开始战略部署吧。早些年时候ss的解决方案正好可以参考，dnsmasq系列相关的教程多如牛毛。初版采用了dnsmasq+dnscrypt+ipset+iptables这一组合，使用一段时间后发现效果不好。由于提供dnscrypt解析的多为园外的服务器，解析速度不理想，很明显感觉网页打开缓慢，于是寻找新的方案。目前选择了dns-over-https这种，又名doh，具体是什么自行科普下。开始想自己搭建服务器，偶然发现红鱼已经有成熟的服务可用，尝试之后速度明显提升，不在卡白。openwrt安装也很简单，同样搜https_dns_proxy，个人觉得不用安装luci-app相关的，只要安装https_dns_proxy本身就可以了，luci那边界面配置没有自定义源，只有两个内置选项，用不起来。
 
 # 更新记录
+2023-03-31
+* 增加 smartdns 配置
+
 2021-12-10
 * 去掉停止更新的广告源
 
