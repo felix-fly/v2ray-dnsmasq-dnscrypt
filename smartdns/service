@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+
+START=85
+STOP=15
+
+USE_PROCD=1
+PROG=/etc/smartdns/smartdns
+CONF=/etc/smartdns/my.conf
+
+start_service() {
+  procd_open_instance
+  procd_set_param command $PROG -c $CONF
+  procd_set_param respawn
+  procd_set_param file $CONF
+  procd_close_instance
+}
+
+stop_service() {
+  service_stop $PROG
+}
